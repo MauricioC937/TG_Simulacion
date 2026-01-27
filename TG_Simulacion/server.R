@@ -34,7 +34,6 @@ freq <- function(x){
 }
 
 sev <- function(x){
-  cat("RESULTADOS DE LA SIMULACIÓN\n\n")
   cat("• El costo promedio de un siniestro es de", round(mean(x), 2), ".\n\n")
   cat("• Un costo típico del siniestro es cercano a", round(median(x), 2), ".\n\n")
   cat("• En su mayoría el costo del siniestro se encuentra entre",
@@ -78,3 +77,4 @@ function(input, output, session) {
   })
   
 }
+
