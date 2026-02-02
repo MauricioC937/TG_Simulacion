@@ -31,12 +31,41 @@ fluidPage(
                       
                       selectInput("freq_dist",
                                   "Distribución:",
-                                  choices = c("Poisson")),
-                      
+                                  choices = c("Poisson", "Binomial", "Binomial Negativa")),
+
+                      conditionalPanel(
+                      condition = "input.freq_dist == 'Poisson'",
                       numericInput("lambda_freq",
                                    "Promedio de siniestros (λ):",
                                    value = 3,
                                    min = 0.01),
+                      ),
+
+                      conditionalPanel(
+                        condition = "input.freq_dist == 'Binomial'",
+                        numericInput("n_bin",
+                                     "n (ensayos):",
+                                     value = 10,
+                                     min = 1),
+                        numericInput("p_bin",
+                                     "p (probabilidad de éxito(siniestro)):",
+                                     value = 0.3,
+                                     min = 0.01,
+                                     max = 0.99)
+                      ),
+
+                      conditionalPanel(
+                        condition = "input.freq_dist == 'Binomial Negativa'",
+                        numericInput("r_nb",
+                                     "r (número de éxitos (siniestros)):",
+                                     value = 3,
+                                     min = 1),
+                        numericInput("p_nb",
+                                     "p (probabilidad de éxito):",
+                                     value = 0.4,
+                                     min = 0.01,
+                                     max = 0.99)
+                      ),
                       
                       numericInput("n_freq_sim",
                                    "Número de simulaciones:",
@@ -52,7 +81,8 @@ fluidPage(
                       plotOutput("freq_plot"),
                       verbatimTextOutput("freq_summary")
                ),
-               
+
+               #Para Severidad
                column(6,
                       
                       h3("Severidad de los Siniestros"),
@@ -61,13 +91,47 @@ fluidPage(
                       
                       selectInput("sev_dist",
                                   "Distribución:",
-                                  choices = c("Exponencial")),
-                      
+                                  choices = c("Exponencial","Gamma", "Log-Normal", "Weibull")),
+
+                      conditionalPanel(
+                      condition = "input.sev_dist == 'Exponencial'",
                       numericInput("lambda_sev",
                                    "Intensidad del costo (λ):",
                                    value = 0.05,
                                    min = 0.0001),
-                      
+                      ),
+                      conditionalPanel(
+                        condition = "input.sev_dist == 'Gamma'",
+                        numericInput("alpha_g",
+                                     "α (parámetro de forma):",
+                                     value = 2,
+                                     min = 0.1),
+                        numericInput("lambda_g",
+                                     "λ (parámetro de escala):",
+                                     value = 0.05,
+                                     min = 0.0001)
+                      ),
+                      conditionalPanel(
+                        condition = "input.sev_dist == 'Log-Normal'",
+                        numericInput("mu_ln",
+                                     "μ (media log)",
+                                     value = 3),
+                        numericInput("sigma_ln",
+                                     "σ (desviación log)",
+                                     value = 0.5,
+                                     min = 0.01)
+                      ),
+                      conditionalPanel(
+                        condition = "input.sev_dist == 'Weibull'",
+                        numericInput("beta_w",
+                                     "β (parámetro de forma):",
+                                     value = 2,
+                                     min = 0.1),
+                        numericInput("lambda_w",
+                                     "λ (parámetro de escala):",
+                                     value = 100,
+                                     min = 0.01)
+                      ),
                       numericInput("n_sev_sim",
                                    "Número de simulaciones:",
                                    value = 1000,
@@ -83,6 +147,31 @@ fluidPage(
                       verbatimTextOutput("sev_summary")
                )
              )
+    ),
+    tabPanel("Pérdida Agregada",
+             
+             h2("Estimación del Costo Total Esperado", align = "center"),
+             p("Simulación de la pérdida agregada."),
+             
+             hr(),
+             
+             fluidRow(
+               column(4,
+                      numericInput("n_sim_total",
+                                   "Número de simulaciones:",
+                                   value = 10000,
+                                   min = 10),
+                      
+                      actionButton("sim_total",
+                                   "Simular Pérdida Agregada",
+                                   icon = icon("calculator"))
+               ),
+               
+               column(8,
+                      plotOutput("agg_plot"),
+                      verbatimTextOutput("agg_summary"))
+             )
     )
   )
 )
+
