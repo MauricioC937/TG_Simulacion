@@ -5,8 +5,11 @@ fluidPage(
   
   titlePanel(
     fluidRow(
-      column(2),
-      column(8, h1("Aplicativo Web - Simulación Actuarial", align = "center")),
+      column(2,tags$img(src='epn.png',width='80px',height='80px')),
+      column(8, h1("Aplicativo Web - Simulación Actuarial", align = "center"),
+            h1('Dayanareth Estevez, Dennis Bazurto, Mauricio Caisaguano',
+                style='text-align:center;color:#132b60;
+                padding:18px;font-size:0.5em;font-family:roman')),
       column(2)
     )
   ),
