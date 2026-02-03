@@ -120,7 +120,7 @@ function(input, output, session) {
   #Severidad
   severidad <- eventReactive(input$sim_sev, {
     switch(input$sev_dist,
-          "Exponencial" = x_exponencial(input$lambda_exp, input$n_sev_sim),
+          "Exponencial" = x_exponencial(input$lambda_sev, input$n_sev_sim),
           "Gamma" = x_gamma(input$alpha_g, input$lambda_g, input$n_sev_sim),
           "Log-Normal" = x_lognormal(input$mu_ln, input$sigma_ln, input$n_sev_sim),
           "Weibull" = x_weibull(input$beta_w, input$lambda_w, input$n_sev_sim))
@@ -137,29 +137,34 @@ function(input, output, session) {
   output$sev_summary <- renderPrint({
     sev(severidad())
   })
-  # Pérdida Agregada
+  # Pérdida Agregada (Con Deducibles y Límites )
   perdida_agregada <- eventReactive(input$sim_total, {
-    
     M <- input$n_sim_total
     S <- numeric(M)
-    
+    deduc <- input$deducible
+    lim <- input$limite
     for (k in 1:M) {
-      
       Nk <- switch(input$freq_dist,
                    "Poisson" = x_poisson(input$lambda_freq, 1),
                    "Binomial" = x_binomial(input$n_bin, input$p_bin, 1),
                    "Binomial Negativa" = x_binom_negativa(input$r_nb, input$p_nb, 1))
-      
       if (Nk == 0) {
         S[k] <- 0
       } else {
         Xk <- switch(input$sev_dist,
-                     "Exponencial" = x_exponencial(input$lambda_exp, Nk),
+                     "Exponencial" = x_exponencial(input$lambda_sev, Nk),
                      "Gamma" = x_gamma(input$alpha_g, input$lambda_g, Nk),
                      "Log-Normal" = x_lognormal(input$mu_ln, input$sigma_ln, Nk),
                      "Weibull" = x_weibull(input$beta_w, input$lambda_w, Nk))
-        S[k] <- sum(Xk)
+        pagos_netos <- pmax(0, Xk - deduc)
+        if (lim > 0) {
+          pagos_netos <- pmin(pagos_netos, lim)
+        }
+        
+        S[k] <- sum(pagos_netos)
       }
+      
+      if(k %% 1000 == 0) incProgress(1/ (M/1000))
     }
     return(S)
   })
@@ -178,6 +183,54 @@ function(input, output, session) {
         round(quantile(S, 0.1), 2), "y",round(quantile(S, 0.9), 2), "\n")
     cat("• En escenarios poco frecuentes, el Costo total de siniestros puede llegar hasta:",
         max(S), ".\n")
+  })
+  # CÁLCULO DE PRIMAS
+  output$primas_summary <- renderPrint({
+    req(input$sim_total) # Verificación que exista la simulación
+    S <- perdida_agregada()
+    m <- input$margen 
+    t <- input$impuestos 
+    prima_pura <- mean(S) #Valor esperado de la pérdida agregada
+    prima_comercial <- prima_pura * (1 + m/100) * (1 + t/100)
+    cat("CÁLCULO DE PRIMAS\n\n")
+    
+    cat("PRIMA PURA (E[S])\n")
+    cat("Definición: Costo esperado de los siniestros.\n")
+    cat(" Valor Estimado: ", round(prima_pura, 2), "\n\n")
+    
+    cat("PARÁMETROS FINANCIEROS\n")
+    cat(" Margen de Ganancia (m):", m, "%\n")
+    cat(" Tasa de Impuestos (t): ", t, "%\n\n")
+    
+    cat("PRIMA COMERCIAL\n")
+    cat(" Valor Final Sugerido: ", round(prima_comercial, 2), "\n")
+  })
+  # INTERVALOS DE CONFIANZA
+  output$intervalos_confianza <- renderPrint({
+    req(input$sim_total) 
+    S <- perdida_agregada()
+    cat("ANÁLISIS DE RIESGO\n\n")
+    cat("Probabilidad de que la pérdida total NO supere ciertos montos:\n\n")
+    probs <- c(0.50, 0.75, 0.90, 0.95, 0.99) # Calculamos percentiles clave
+    quantiles <- quantile(S, probs)
+    for(i in 1:length(probs)){
+      cat("• ", probs[i]*100, "% de probabilidad de no exceder: ", 
+          round(quantiles[i], 2), "\n")
+    }
+    cat("\nNota: El valor al 99.5% (Cola extrema) es: ", 
+        round(quantile(S, 0.995), 2))
+  })
+  output$agg_cdf_plot <- renderPlot({
+    S <- perdida_agregada()
+    plot(ecdf(S), 
+         main = "Probabilidad Acumulada de la Pérdida Total (CDF)", 
+         xlab = "Monto de Pérdida ($)", 
+         ylab = "Probabilidad (P[S <= x])",
+         col = "darkblue", lwd = 2, verticals = TRUE, do.points = FALSE)
+    grid()
+    abline(h = 0.95, col = "red", lty = 2) # Línea de referencia al 95%
+    legend("bottomright", legend = c("CDF Empírica", "Var 95%"), 
+           col = c("darkblue", "red"), lty = c(1, 2), lwd = 2)
   })
 }
 

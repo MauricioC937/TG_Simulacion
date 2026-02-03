@@ -151,25 +151,70 @@ fluidPage(
     tabPanel("Pérdida Agregada",
              
              h2("Estimación del Costo Total Esperado", align = "center"),
-             p("Simulación de la pérdida agregada."),
+             p("Simulación de la pérdida agregada y cálculo de primas."),
              
              hr(),
              
              fluidRow(
+               # COLUMNA DE CONTROLES
                column(4,
-                      numericInput("n_sim_total",
-                                   "Número de simulaciones:",
-                                   value = 10000,
-                                   min = 10),
-                      
-                      actionButton("sim_total",
-                                   "Simular Pérdida Agregada",
-                                   icon = icon("calculator"))
+                      wellPanel( 
+                        h4("Configuración de Simulación"),
+                        numericInput("n_sim_total",
+                                     "Número de simulaciones:",
+                                     value = 10000,
+                                     min = 10),
+                        
+                        hr(),
+                        
+                        h4("Parámetros Financieros"),
+                        helpText("Necesarios para calcular la Prima Comercial."),
+                        
+                        
+                        numericInput("margen", 
+                                     "Margen de Ganancia (%):", 
+                                     value = 20, min = 0),
+                        
+                        numericInput("impuestos", 
+                                     "Tasa de Impuestos (%):", 
+                                     value = 12, min = 0),
+                        
+                        hr(),
+                        h4("Condiciones de la Póliza"),
+                        helpText("Aplica deducibles y límites por evento."),
+                        numericInput("deducible", "Deducible por evento:", value = 0, min = 0),
+                        numericInput("limite", "Límite por evento (0 = Sin límite):", value = 0, min = 0),
+                        actionButton("sim_total",
+                                     "Simular y Calcular",
+                                     class = "btn-primary",
+                                     icon = icon("calculator"),
+                                     width = "100%")
+                      )
                ),
                
+               # COLUMNA DE RESULTADOS
                column(8,
+                      h4("Distribución de Pérdidas"),
                       plotOutput("agg_plot"),
-                      verbatimTextOutput("agg_summary"))
+                      plotOutput("agg_cdf_plot"),
+                      br(),
+                      
+                      tabsetPanel(
+                        # Resumen estadístico básico
+                        tabPanel("Resumen Estadístico", 
+                                 verbatimTextOutput("agg_summary")
+                        ),
+                        
+                        # Primas
+                        tabPanel("Cálculo de Primas", 
+                                 verbatimTextOutput("primas_summary")
+                        ),
+                        #Intervalos de confianza
+                        tabPanel("Intervalos de Confianza", 
+                                 verbatimTextOutput("intervalos_confianza")
+                        )
+                      )
+               )
              )
     )
   )
